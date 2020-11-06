@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using NetCore_PushServer.Database;
 using NetCore_PushServer.Enums;
 using NetCore_PushServer.Models;
+using Newtonsoft.Json;
 
 namespace NetCore_PushServer
 {
@@ -13,11 +16,14 @@ namespace NetCore_PushServer
         protected SemaphoreLock queueLock;
         protected Queue<TokenNotification> queue = new Queue<TokenNotification>();
 
+        private FcmHttp _fcmHttp;
+
         public Google(ILog log): base(log) {}
 
         public override Task ExecuteAsync(CancellationToken ct)
         {
             queueLock = new SemaphoreLock(ct);
+            _fcmHttp = new FcmHttp();
             return base.ExecuteAsync(ct);
         }
 
@@ -33,7 +39,7 @@ namespace NetCore_PushServer
                     continue;
                 }
 
-                var dicLanguage = CheckRequest(request);
+                var dicLanguage = CheckGoogleRequest(request);
                 if (dicLanguage == null)
                 {
                     await PushDB.RequestStateAsync(PushType.Google, request.RequestNo, PushState.Error);
@@ -70,32 +76,52 @@ namespace NetCore_PushServer
 
             while(!ct.IsCancellationRequested)
             {
-                var token = await DequeueToken();
+                try
+                {                                    
+                    var token = await DequeueToken();
 
-                if (token != null)
-                {
-                    if (expiredTokens.Count > 0)
+                    if (token != null)
                     {
-                        await PushDB.ExpirePushTokensAsync(PushType.Google, expiredTokens);
-                        expiredTokens.Clear();
+                        if (expiredTokens.Count > 0)
+                        {
+                            await PushDB.ExpirePushTokensAsync(PushType.Google, expiredTokens);
+                            expiredTokens.Clear();
+                        }
+
+                        await Task.Delay(1000, ct);
+                        continue;
                     }
 
-                    await Task.Delay(1000, ct);
-                    continue;
-                }
+                    if (token.Request.RequestNo != currentRequestNo)
+                    {
+                        // fail + 1
+                    }
 
-                if (token.Request.RequestNo != currentRequestNo)
+                    currentRequestNo = token.Request.RequestNo;
+
+                    // send
+                    var res = await _fcmHttp.RequestAsync(token.Token, token.Notification);
+
+                    if (res.StatusCode != HttpStatusCode.OK)
+                    {
+                        // fail + 1
+                    }
+
+                    if (res.StatusCode == HttpStatusCode.NotFound || res.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        expiredTokens.Add(token.Seq);
+                        if (expiredTokens.Count > 100)
+                        {
+                            await PushDB.ExpirePushTokensAsync(PushType.Google, expiredTokens);
+                            expiredTokens.Clear();
+                        }
+                    }
+                }
+                catch (Exception ex)
                 {
-                    // fail + 1
+                    _log.Error(ex.StackTrace);
+                    await Task.Delay(1000);
                 }
-
-                currentRequestNo = token.Request.RequestNo;
-
-                // send
-
-                // result check
-
-                await Task.Delay(1000);
             }
         }
 
@@ -145,6 +171,16 @@ namespace NetCore_PushServer
             }
 
             return null;
+        }
+
+        private Dictionary<string, AndroidNotification> CheckGoogleRequest(PushRequest request)
+        {
+            var dicLanguage = JsonConvert.DeserializeObject<Dictionary<string, AndroidNotification>>(request.Payload);
+
+            // 푸시 발송 시 영어는 기본
+            if (dicLanguage.ContainsKey("English") == false) return null;
+
+            return dicLanguage;
         }
     }
 }

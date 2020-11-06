@@ -4,6 +4,13 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.0.22" />
+    <PackageReference Include="Dapper" Version="2.0.35" />
+    <PackageReference Include="NLog" Version="4.7.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.49.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Services\" />
@@ -12,11 +19,6 @@
     <Folder Include="Database\" />
     <Folder Include="Enums\" />
     <Folder Include="Http\" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.22" />
-    <PackageReference Include="Dapper" Version="2.0.35" />
-    <PackageReference Include="NLog" Version="4.7.5" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <Folder Include="Http\Fcm\" />
   </ItemGroup>
 </Project>

@@ -57,9 +57,9 @@ namespace NetCore_PushServer
             return list;
         }
 
-        protected Dictionary<string, AndroidNotification> CheckRequest(PushRequest request)
+        protected Dictionary<string, Alert> CheckAppleRequest(PushRequest request)
         {
-            var dicLanguage = JsonConvert.DeserializeObject<Dictionary<string, AndroidNotification>>(request.Payload);
+            var dicLanguage = JsonConvert.DeserializeObject<Dictionary<string, Alert>>(request.Payload);
 
             // 푸시 발송 시 영어는 기본
             if (dicLanguage.ContainsKey("English") == false) return null;
