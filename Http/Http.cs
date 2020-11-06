@@ -39,12 +39,5 @@ namespace NetCore_PushServer
 
             _isDisposed = true;
         }
-
-        protected virtual Task Initialize(string keyPath)
-        {
-            throw new Exception("Do not call this Initialize method!");
-        }
-
-
     }
 }
