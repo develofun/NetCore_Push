@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using NetCore_PushServer.Models;
 using Newtonsoft.Json;
 
 namespace NetCore_PushServer
 {
-    public class Push : IHostedService
+    public class Push
     {
         protected readonly ILog _log;
         protected const int TokenLimit = 1000;
@@ -20,18 +17,7 @@ namespace NetCore_PushServer
             _log = log;
         }
 
-        public Task StartAsync(CancellationToken ct)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual Task ExecuteAsync(CancellationToken ct) { throw new Exception("Do not call ExcuteAsync()"); }
-
-        public Task StopAsync(CancellationToken ct)
-        {
-            _log.Info("Push server stopped...");
-            return Task.CompletedTask;
-        }
+        public virtual void Execute(CancellationToken ct) { throw new Exception("Do not call ExcuteAsync()"); }
 
         public List<PushToken> CheckNightPushTokens(HashSet<string> localeSet, List<PushToken> tokens)
         {

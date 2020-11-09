@@ -17,4 +17,12 @@
 		public string Token { get; set; }
 		public AndroidNotification Notification { get; set; }
 	}
+
+	public class TokenAlert
+    {
+		public PushRequest Request { get; set; }
+		public long Seq { get; set; }
+		public string Token { get; set; }
+		public Alert Alert { get; set; }
+	}
 }

@@ -17,14 +17,27 @@ namespace NetCore_PushServer
         protected Queue<TokenNotification> queue = new Queue<TokenNotification>();
 
         private FcmHttp _fcmHttp;
+        private readonly int _taskCount;
+        private List<Task> _tasks = new List<Task>();
 
-        public Google(ILog log): base(log) {}
+        public Google(ILog log, int taskCount): base(log)
+        {
+            _taskCount = taskCount;
+            _fcmHttp = new FcmHttp();
+        }
 
-        public override Task ExecuteAsync(CancellationToken ct)
+        public override void Execute(CancellationToken ct)
         {
             queueLock = new SemaphoreLock(ct);
-            _fcmHttp = new FcmHttp();
-            return base.ExecuteAsync(ct);
+
+            _tasks.Add(RunSchedulerAsync(ct));
+
+            for (int idx = 0; idx < _taskCount; idx++)
+            {
+                _tasks.Add(RunSenderAsync(ct));
+            }
+
+            Task.WhenAll(_tasks).Wait();
         }
 
         public async Task RunSchedulerAsync(CancellationToken ct)
@@ -62,7 +75,7 @@ namespace NetCore_PushServer
                     await EnqueueTokens(ct, request, dicLanguage, tokens);
                     await PushDB.RequestSendAsync(PushType.Google, request.RequestNo, sentSeq, PushState.Sending);
 
-                    _log.Info($"Send complete google tokens | Request No {request.RequestNo} | Last sent seq: {sentSeq}");
+                    _log.Info($"Send complete google tokens | Last sent seq: {sentSeq}");
                 }
 
                 await Task.Delay(5000, ct);
