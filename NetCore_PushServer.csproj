@@ -20,5 +20,6 @@
     <Folder Include="Enums\" />
     <Folder Include="Http\" />
     <Folder Include="Http\Fcm\" />
+    <Folder Include="Images\" />
   </ItemGroup>
 </Project>
