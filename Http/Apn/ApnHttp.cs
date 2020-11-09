@@ -18,7 +18,6 @@ namespace NetCore_PushServer
     {
 		private static readonly Uri _devUri = new Uri("https://api.sandbox.push.apple.com/3/device/");
 		private static readonly Uri _prodUri = new Uri("https://api.push.apple.com/3/device/");
-		private static SemaphoreLock _semaphoreLock = new SemaphoreLock();
 		private static readonly NLog.Logger _log = NLog.LogManager.GetCurrentClassLogger();
 
 		private static ECDsa dsa;
@@ -149,27 +148,21 @@ namespace NetCore_PushServer
 				}
 			}
 
-			var payload = Payload.SetAlert(alert);
-			var json = payload.ToJson();
+			var stringContent = new StringContent(Payload.SetAlert(alert).ToJson(), Encoding.UTF8, "application/json");
+			using var res = await _client.PostAsync(deviceToken, stringContent);
 
-			using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+			var response = new ApnResponse
 			{
-				using (var res = await _client.PostAsync(deviceToken, content))
-				{
-					var response = new ApnResponse
-					{
-						StatusCode = res.StatusCode,
-						Reason = res.ReasonPhrase
-					};
+				StatusCode = res.StatusCode,
+				Reason = res.ReasonPhrase
+			};
 
-					if (res.Headers.TryGetValues("apns-id", out var values))
-					{
-						response.ApnsId = values.FirstOrDefault();
-					}
-
-					return response;
-				}
+			if (res.Headers.TryGetValues("apns-id", out var values))
+			{
+				response.ApnsId = values.FirstOrDefault();
 			}
+
+			return response;
 		}
 	}
 }

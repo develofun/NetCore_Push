@@ -57,9 +57,7 @@ namespace NetCore_PushServer
                 }
             }
 
-            var message = FcmMessage.SetTokenAndData(token, notification);
-            var json = message.ToJson();
-
+            var json = FcmMessage.SetTokenAndData(token, notification).ToJson();
             using var res = await _client.PostAsync("", new StringContent(json, Encoding.UTF8, "application/json"));
 
             return new HttpResponse
